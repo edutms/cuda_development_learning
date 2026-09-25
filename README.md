@@ -67,10 +67,11 @@ is. The `hello` / `vecadd` targets build *and run*, so they need a real GPU eith
 
 ## Free GPU options
 
-| | GPU | Arch flag | Quota |
-|---|---|---|---|
-| **Google Colab** | T4 (16 GB) | `sm_75` | Best-effort, ~15–30 h/week, ~12 h sessions |
-| **Kaggle Notebooks** | T4 or P100 | `sm_75` / `sm_60` | Guaranteed 30 h/week, 9 h sessions |
+| | GPU | Arch flag | Quota | Local IDE? |
+|---|---|---|---|---|
+| **Lightning AI Studios** | T4 and up | detected | ~80 credit-h/mo ≈ **22 h on a T4** | **Yes — VS Code over SSH** |
+| **Google Colab** | T4 (16 GB) | `sm_75` | Best-effort, ~15–30 h/week, ~12 h sessions | No |
+| **Kaggle Notebooks** | T4 or P100 | `sm_75` / `sm_60` | Guaranteed 30 h/week, 9 h sessions | No |
 
 Colab's free GPU is *not guaranteed* — at busy times you may be offered CPU only.
 Kaggle is the fallback and needs no changes: `scripts/build.sh` detects the architecture
@@ -78,7 +79,47 @@ at build time, so the same repo compiles correctly on a P100.
 
 Compute capability → flag: T4 `sm_75`, P100 `sm_60`, A100 `sm_80`, L4 `sm_89`.
 
+### Lightning AI Studios — real VS Code on a real GPU
+
+The one free option that lets you stay in your editor. A Studio is a persistent cloud
+workspace; you connect **local VS Code to it over SSH** and get a real filesystem,
+terminal and `nvcc`. SSH and "connect any IDE" are supported free-tier features here,
+not workarounds.
+
+Setup (see [Lightning's connect-local-IDE docs](https://lightning.ai/docs/overview/ai-studio/connect-local-ide)
+for the current click-path):
+
+1. Sign up at <https://lightning.ai> and verify your phone — that unlocks the free GPU credits.
+2. Create a Studio, then use its SSH option to register your key. You already have one:
+   `~/.ssh/id_ed25519.pub` (the same key GitHub uses).
+3. In VS Code install **Remote - SSH**, then connect to the host Lightning gives you.
+4. In the Studio terminal: `git clone git@github.com:edutms/cuda_development_learning.git`
+5. `./scripts/build.sh src/02_vector_add/vector_add.cu && ./build/vector_add`
+
+`build.sh` needs no changes — it detects whatever GPU the Studio is running.
+
+**Make the 22 hours last.** Two habits, both of which this repo is already built around:
+
+- **Switch the Studio to a CPU machine when you are not running kernels.** The filesystem
+  persists across machine switches (everything under `~` / `/teamspace/studios/this_studio`),
+  so you keep your work and stop burning GPU credits while reading, editing or debugging.
+- **Keep compile-checking locally.** `./scripts/check-local.sh` costs nothing and catches
+  the compile errors before you ever spend a GPU minute. This stays your first line of
+  defence no matter which cloud you run on.
+
+Colab remains the zero-setup fallback, and the notebook still works. Lightning is the
+better daily driver; Colab is better for a quick throwaway check.
+
 ## Gotchas worth knowing
+
+**You cannot attach VS Code to a Colab runtime.** Google exposes no Jupyter endpoint for
+it, and the SSH-tunnel workarounds (`colab-ssh`, `remocolab`, `colabcode`) are explicitly
+disallowed by the [Colab FAQ](https://research.google.com/colaboratory/faq.html) on free
+runtimes — "remote control through SSH shells or remote desktops" and "bypassing the
+notebook interface" can be terminated without warning, and Google actively breaks these
+tools. Colab's "Connect to local runtime" is the *opposite* of what it sounds like: it
+runs the kernel on your machine, which has no NVIDIA GPU. Use Lightning AI Studios above
+if you want an IDE on a GPU.
 
 **`/content` is ephemeral.** Colab wipes the filesystem on disconnect. Git is the only
 thing that persists — never leave work only in the runtime.

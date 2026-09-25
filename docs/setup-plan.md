@@ -149,6 +149,23 @@ T4. The end-to-end proof is `vector_add` printing `PASSED` with a bandwidth figu
 3. Edit `REPO_URL` in cell 2 of `notebooks/00_colab_setup.ipynb`.
 4. Open in Colab, set **Runtime → Change runtime type → T4 GPU**, Run all.
 
+## Follow-up: IDE access (added after initial build)
+
+Colab cannot be driven from VS Code. There is no public Jupyter endpoint, and the SSH
+tunnel workarounds are prohibited on free runtimes by the Colab FAQ ("remote control
+through SSH shells or remote desktops", "bypassing the notebook interface"), terminable
+without warning and actively broken by Google. Colab's "Connect to local runtime" runs
+the kernel locally — useless without an NVIDIA GPU.
+
+**Lightning AI Studios** was added to the README as the legitimate answer: free tier,
+SSH and local-IDE connection are supported features, persistent filesystem, and the
+machine can be switched between CPU and GPU while keeping files. Budget is the
+constraint — ~80 credit-hours/month, about 22 on a T4 — so the discipline the repo
+already enforces (compile locally, run remotely; sit on a CPU machine while editing)
+is what makes it viable.
+
+Colab is kept as the zero-setup fallback; the notebook still works unchanged.
+
 ## Where this goes next
 
 The examples stop where the environment is proven — they are a toolchain test, not a
