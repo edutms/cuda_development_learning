@@ -25,15 +25,14 @@ Create an empty **public** repo named `cuda_development` at <https://github.com/
 (public so the Colab clone cell works without auth), then:
 
 ```bash
-git remote add origin https://github.com/YOUR_USERNAME/cuda_development.git
+git remote add origin https://github.com/edutms/cuda_development_learning.git
 git add -A && git commit -m "CUDA study environment" && git push -u origin main
 ```
 
-**3. Point the notebook at it** — edit `REPO_URL` in cell 2 of
-`notebooks/00_colab_setup.ipynb`, then open it in Colab:
+**3. Open the notebook in Colab** (`REPO_URL` in cell 2 already points here):
 
 ```
-https://colab.research.google.com/github/YOUR_USERNAME/cuda_development/blob/main/notebooks/00_colab_setup.ipynb
+https://colab.research.google.com/github/edutms/cuda_development_learning/blob/main/notebooks/00_colab_setup.ipynb
 ```
 
 In Colab: **Runtime → Change runtime type → T4 GPU** before running anything.
