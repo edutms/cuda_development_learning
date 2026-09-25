@@ -1,0 +1,3 @@
+# Local notebook authoring only.
+# Nothing GPU-related: there is no CUDA device on this machine, kernels run in Colab.
+jupyterlab

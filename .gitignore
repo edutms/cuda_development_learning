@@ -1,0 +1,13 @@
+# build artifacts
+build/
+*.o
+*.out
+*.exe
+
+# local python env
+.venv/
+__pycache__/
+*.pyc
+
+# notebooks
+.ipynb_checkpoints/
