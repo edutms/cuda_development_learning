@@ -59,6 +59,7 @@ Then re-run cell 2 in the Colab notebook to pull, and the build/run cells to exe
 | `src/01_hello/` | Smallest kernel launch — proves the toolchain. |
 | `src/02_vector_add/` | Full host/device cycle with CUDA-event timing. |
 | `notebooks/00_colab_setup.ipynb` | Colab entry point: clone → build → run. |
+| `docs/setup-plan.md` | Why this is built the way it is — design rationale and decisions. |
 
 `./scripts/check-local.sh` compiles everything and is the command you run constantly.
 A `Makefile` is included too (`make check`, `make hello`, `make vecadd`), but `make` is
