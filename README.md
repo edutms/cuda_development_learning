@@ -4,8 +4,8 @@ Learning CUDA C++ without owning an NVIDIA GPU: write and compile-check locally,
 run kernels on a free cloud GPU.
 
 ```
-   edit .cu locally  ->  check-local.sh  ->  git push  ->  Colab pulls & runs on a T4
-   (VS Code)            (podman, no GPU)   (GitHub)      (free GPU)
+   edit .cu locally  ->  check-local.sh  ->  git push  ->  Colab runtime runs on a T4
+   (VS Code)            (podman, no GPU)   (GitHub)      (free GPU, driven from VS Code)
 ```
 
 The split matters. `nvcc` needs a GPU to *run* code but not to *compile* it, so the
@@ -20,22 +20,17 @@ in seconds. Colab's limited free GPU hours get spent only on actually executing 
 ./scripts/setup-venv.sh
 ```
 
-**2. GitHub repo** — Colab pulls your code from GitHub, so it needs a remote.
-Create an empty **public** repo named `cuda_development` at <https://github.com/new>
-(public so the Colab clone cell works without auth), then:
+**2. VS Code + Colab extensions** — this is what lets you drive a free T4 without
+leaving the editor. See **[docs/vscode-colab.md](docs/vscode-colab.md)** for the walkthrough.
 
 ```bash
-git remote add origin https://github.com/edutms/cuda_development_learning.git
-git add -A && git commit -m "CUDA study environment" && git push -u origin main
+code --install-extension ms-toolsai.jupyter
+code --install-extension Google.colab
 ```
 
-**3. Open the notebook in Colab** (`REPO_URL` in cell 2 already points here):
-
-```
-https://colab.research.google.com/github/edutms/cuda_development_learning/blob/main/notebooks/00_colab_setup.ipynb
-```
-
-In Colab: **Runtime → Change runtime type → T4 GPU** before running anything.
+**3. GitHub remote** — the Colab runtime pulls your code from GitHub. Already configured
+here (`git remote -v` → `edutms/cuda_development_learning`); a fresh clone needs nothing.
+The repo must be **public** for the notebook's clone cell to work without auth.
 
 ## Daily loop
 
@@ -45,7 +40,15 @@ code src/03_whatever/kernel.cu      # write
 git add -A && git commit -m "..." && git push
 ```
 
-Then re-run cell 2 in the Colab notebook to pull, and the build/run cells to execute.
+Then in `notebooks/00_colab_setup.ipynb` (open in VS Code, kernel = Colab T4): re-run the
+clone/pull cell, then the build/run cells.
+
+**Why the git step does not go away:** the Colab runtime is a different machine and cannot
+read your working tree. Pushing is how code gets there — see the gotchas below.
+
+The browser remains a fallback:
+[open in Colab](https://colab.research.google.com/github/edutms/cuda_development_learning/blob/main/notebooks/00_colab_setup.ipynb)
+→ **Runtime → Change runtime type → T4 GPU**.
 
 ## What's here
 
@@ -58,6 +61,7 @@ Then re-run cell 2 in the Colab notebook to pull, and the build/run cells to exe
 | `src/01_hello/` | Smallest kernel launch — proves the toolchain. |
 | `src/02_vector_add/` | Full host/device cycle with CUDA-event timing. |
 | `notebooks/00_colab_setup.ipynb` | Colab entry point: clone → build → run. |
+| `docs/vscode-colab.md` | Driving a Colab T4 from VS Code — setup and limits. |
 | `docs/setup-plan.md` | Why this is built the way it is — design rationale and decisions. |
 
 `./scripts/check-local.sh` compiles everything and is the command you run constantly.
@@ -69,8 +73,8 @@ is. The `hello` / `vecadd` targets build *and run*, so they need a real GPU eith
 
 | | GPU | Arch flag | Quota | Local IDE? |
 |---|---|---|---|---|
-| **Lightning AI Studios** | T4 and up | detected | ~80 credit-h/mo ≈ **22 h on a T4** | **Yes — VS Code over SSH** |
-| **Google Colab** | T4 (16 GB) | `sm_75` | Best-effort, ~15–30 h/week, ~12 h sessions | No |
+| **Google Colab** | T4 (16 GB) | `sm_75` | Best-effort, ~15–30 h/week, ~12 h sessions | **Yes — official extension** |
+| **Lightning AI Studios** | T4 and up | detected | ~80 credit-h/mo ≈ **22 h on a T4** | Yes — SSH, plus a real terminal |
 | **Kaggle Notebooks** | T4 or P100 | `sm_75` / `sm_60` | Guaranteed 30 h/week, 9 h sessions | No |
 
 Colab's free GPU is *not guaranteed* — at busy times you may be offered CPU only.
@@ -79,12 +83,13 @@ at build time, so the same repo compiles correctly on a P100.
 
 Compute capability → flag: T4 `sm_75`, P100 `sm_60`, A100 `sm_80`, L4 `sm_89`.
 
-### Lightning AI Studios — real VS Code on a real GPU
+### Lightning AI Studios — when you need a persistent machine
 
-The one free option that lets you stay in your editor. A Studio is a persistent cloud
-workspace; you connect **local VS Code to it over SSH** and get a real filesystem,
-terminal and `nvcc`. SSH and "connect any IDE" are supported free-tier features here,
-not workarounds.
+Not needed for the everyday loop: the Colab extension already gives you a T4 inside VS Code.
+Reach for a Studio when you need what Colab runtimes structurally cannot provide — a
+**persistent filesystem, a real terminal, and sanctioned SSH**. A Studio survives restarts
+and GPU switches, and installs (`apt-get`, pip, conda, source builds) persist, so a toolchain
+is a one-time cost.
 
 Setup (see [Lightning's connect-local-IDE docs](https://lightning.ai/docs/overview/ai-studio/connect-local-ide)
 for the current click-path):
@@ -107,19 +112,36 @@ for the current click-path):
   the compile errors before you ever spend a GPU minute. This stays your first line of
   defence no matter which cloud you run on.
 
-Colab remains the zero-setup fallback, and the notebook still works. Lightning is the
-better daily driver; Colab is better for a quick throwaway check.
+Their rendered docs are JavaScript-only stubs — **append `.md` to any docs URL** to get
+readable markdown. Start at
+[modify-environment](https://lightning.ai/docs/platform/build/ai-studio/modify-environment)
+(persistence rules) and
+[on-start-actions](https://lightning.ai/docs/platform/build/ai-studio/on-start-actions)
+(`on_start.sh` vs `.studiorc` — env vars set in the former do *not* reach later terminals,
+which is the trap).
+
+One caveat before committing time: it is unverified whether a Studio ships `nvcc` at all.
+"No CUDA setup" normally means driver plus CUDA *runtime* for PyTorch, and the *compiler*
+is a separate package such images often omit. Check `nvcc --version` first.
 
 ## Gotchas worth knowing
 
-**You cannot attach VS Code to a Colab runtime.** Google exposes no Jupyter endpoint for
-it, and the SSH-tunnel workarounds (`colab-ssh`, `remocolab`, `colabcode`) are explicitly
-disallowed by the [Colab FAQ](https://research.google.com/colaboratory/faq.html) on free
-runtimes — "remote control through SSH shells or remote desktops" and "bypassing the
-notebook interface" can be terminated without warning, and Google actively breaks these
-tools. Colab's "Connect to local runtime" is the *opposite* of what it sounds like: it
-runs the kernel on your machine, which has no NVIDIA GPU. Use Lightning AI Studios above
-if you want an IDE on a GPU.
+**The Colab kernel cannot see your local files.** This is the one thing that surprises
+people using the VS Code extension: "a local notebook path is not the same thing as a
+remote runtime path." The runtime is a different machine, so it cannot read your working
+tree — which is exactly why cell 2 of the notebook (`git clone` / `git pull`) is mandatory
+rather than a convenience. Edit locally, push, pull in the runtime.
+
+**SSH tunnels into Colab are still prohibited.** An official extension is not the same
+thing as sanctioned SSH. `colab-ssh`, `remocolab` and `colabcode` remain disallowed by the
+[Colab FAQ](https://research.google.com/colaboratory/faq.html) on free runtimes — "remote
+control through SSH shells or remote desktops" and "bypassing the notebook interface" can
+be terminated without warning, and Google actively breaks these tools. If you need a real
+terminal on a GPU box, use Lightning AI Studios, not a tunnel.
+
+**Colab's "Connect to local runtime" is the opposite of what it sounds like.** It runs the
+kernel on *your* machine with Colab as the frontend — giving you no GPU at all here. Not
+to be confused with the VS Code extension, which is the direction you want.
 
 **`/content` is ephemeral.** Colab wipes the filesystem on disconnect. Git is the only
 thing that persists — never leave work only in the runtime.

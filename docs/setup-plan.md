@@ -151,20 +151,44 @@ T4. The end-to-end proof is `vector_add` printing `PASSED` with a bandwidth figu
 
 ## Follow-up: IDE access (added after initial build)
 
-Colab cannot be driven from VS Code. There is no public Jupyter endpoint, and the SSH
-tunnel workarounds are prohibited on free runtimes by the Colab FAQ ("remote control
-through SSH shells or remote desktops", "bypassing the notebook interface"), terminable
-without warning and actively broken by Google. Colab's "Connect to local runtime" runs
-the kernel locally — useless without an NVIDIA GPU.
+**Corrected 2026-09-26.** This section originally concluded that Colab could not be driven
+from VS Code. That was wrong, and the wrong version was published in the README for a day.
+Recording the correction rather than quietly overwriting it, since this file is a decision
+record.
 
-**Lightning AI Studios** was added to the README as the legitimate answer: free tier,
-SSH and local-IDE connection are supported features, persistent filesystem, and the
-machine can be switched between CPU and GPU while keeping files. Budget is the
-constraint — ~80 credit-hours/month, about 22 on a T4 — so the discipline the repo
-already enforces (compile locally, run remotely; sit on a CPU machine while editing)
-is what makes it viable.
+**What was claimed:** no public Jupyter endpoint for Colab runtimes, so the only routes were
+prohibited SSH tunnels (`colab-ssh`, `remocolab`) or a different provider.
 
-Colab is kept as the zero-setup fallback; the notebook still works unchanged.
+**What is actually true:** Google released an
+[official Colab extension for VS Code](https://marketplace.visualstudio.com/items?itemName=Google.colab)
+on [2026-09-22](https://developers.googleblog.com/google-colab-is-coming-to-vs-code/).
+Select Kernel → Colab → T4 connects a local notebook to a Colab runtime. Shell escapes
+(`!nvcc`, `!nvidia-smi`) work, so the existing notebook runs through it unchanged.
+
+**Why the error happened:** the extension postdates the assistant's knowledge cutoff, and
+the claim was asserted from memory instead of checked. The general lesson for this repo:
+"platform X cannot do Y" is a claim with a short shelf life and should be verified against
+current sources before being written into documentation.
+
+**What survived the correction:**
+
+- SSH tunnels into Colab are *still* prohibited. An official extension is not sanctioned
+  SSH; the FAQ language about "remote control through SSH shells or remote desktops" is
+  unchanged.
+- "Connect to local runtime" is still the useless reverse direction — kernel on your
+  machine, which has no GPU.
+- The git round-trip is still required. The runtime cannot see local files: "a local notebook
+  path is not the same thing as a remote runtime path." The extension gives an editor, not a
+  synced filesystem.
+
+**Consequence for the design:** the local→git→cloud split is unchanged and was never at
+risk — only the interface to it improved. Scripts needed no modification.
+
+**Lightning AI Studios** keeps a narrower but real niche: persistent filesystem, real
+terminal, sanctioned SSH — none of which a Colab runtime provides. Documented in the README
+and planned in detail, deferred rather than dropped. One open question there: whether a
+Studio ships `nvcc` at all, since "no CUDA setup" usually means driver plus runtime, not the
+compiler.
 
 ## Where this goes next
 
